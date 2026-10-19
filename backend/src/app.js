@@ -23,6 +23,8 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(clerkMiddleware());
 
+const habitRoutes = require('./routes/habit.routes');
+
 app.get('/whoami', (req, res) => {
   const { userId, sessionId, sessionClaims } = getAuth(req);
   res.json({
@@ -42,6 +44,8 @@ app.get('/health', (req, res) => {
     data: { status: 'ok', timestamp: new Date().toISOString() },
   });
 });
+
+app.use('/habits', habitRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, error: 'Endpoint topilmadi' });
