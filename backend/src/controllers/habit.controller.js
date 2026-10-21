@@ -4,7 +4,7 @@ const ensureUser = require('../utils/ensureUser');
 const getAll = async (req, res, next) => {
   try {
     const habits = await prisma.habit.findMany({
-      where: { userId: req.userId },
+      // where: { userId: req.userId },
       orderBy: { createdAt: 'desc' },
       include: {
         _count: { select: { checkIns: true } }

@@ -1,63 +1,47 @@
-import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { getHabits, deleteHabit } from '../api/habits';
 import LoadingState from '../components/utils/LoadingState';
 import ErrorState from '../components/utils/ErrorState';
 import EmptyState from '../components/utils/EmptyState';
+import { useQuery } from '@tanstack/react-query';
 
 function Dashboard() {
-  const [habits, setHabits] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  const loadHabits = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await getHabits();
-      setHabits(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadHabits();
-  }, []);
+  const { 
+    data: habits = [], 
+    isLoading, 
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ['habits'],
+    queryFn: getHabits,
+  });
 
   const handleDelete = async (id) => {
     if (!window.confirm("O'chirishni tasdiqlaysizmi?")) return;
     try {
       await deleteHabit(id);
-      setHabits((prev) => prev.filter((h) => h.id !== id));
       toast.success("Odat o'chirildi");
+      refetch(); 
     } catch (err) {
       toast.error(err.message);
     }
   };
 
+  if (isLoading) return <LoadingState message="Odatlar yuklanmoqda..." />;
+  if (error) return <ErrorState message={error.message} onRetry={refetch} />;
+
   return (
     <div className="animate-fade-in">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-1">Mening odatlarim</h1>
-          <p className="text-text-muted">Har kuni kichik qadamlar bilan katta natijalarga erishing.</p>
-        </div>
-        <button className="bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl font-medium transition shadow-lg shadow-primary/20 flex items-center gap-2 w-fit">
-          <span>+</span> Yangi odat
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Mening odatlarim</h1>
+        <button className="bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl transition shadow-lg shadow-primary/20">
+          + Yangi odat
         </button>
       </div>
 
-      {loading && <LoadingState />}
-      {error && <ErrorState message={error} onRetry={loadHabits} />}
-      
-      {!loading && !error && habits.length === 0 && (
+      {habits.length === 0 ? (
         <EmptyState message="Hozircha odatlaringiz yo'q. Yangi odat qo'shing!" />
-      )}
-
-      {!loading && !error && habits.length > 0 && (
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {habits.map((habit) => (
             <div key={habit.id} className="bg-surface border border-border rounded-2xl p-5 hover:border-primary/50 transition group">
@@ -71,7 +55,6 @@ function Dashboard() {
                 <button 
                   onClick={() => handleDelete(habit.id)}
                   className="text-text-muted hover:text-danger transition opacity-0 group-hover:opacity-100"
-                  title="O'chirish"
                 >
                   🗑️
                 </button>
@@ -81,7 +64,7 @@ function Dashboard() {
               
               <div className="mt-6 pt-4 border-t border-border flex items-center justify-between text-sm">
                 <span className="text-text-muted">Bajarilgan:</span>
-                <span className="font-bold text-primary">{habit._count.checkIns} marta</span>
+                <span className="font-bold text-primary">{habit._count?.checkIns || 0} marta</span>
               </div>
             </div>
           ))}
